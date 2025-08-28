@@ -90,7 +90,7 @@ const Signup: React.FC = () => {
                 <option value="consumer">Consumer</option>
                 <option value="producer">Producer</option>
                 <option value="recycler">Recycler</option>
-                <option value="admin">Admin</option>
+                
               </select>
             </div>
             <div>
