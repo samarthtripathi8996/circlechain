@@ -1,4 +1,4 @@
-#!/home/samarth-tripathi/circlechain/circlechain.backend/venv/bin/python3
+#!/home/samarth-tripathi/myprojects/circlechain/circlechain.backend/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
