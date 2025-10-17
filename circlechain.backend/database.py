@@ -5,7 +5,7 @@ import os
 
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:new_password@localhost/marketplace"
+    "postgresql://postgres:newpassword@localhost/marketplace"
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
