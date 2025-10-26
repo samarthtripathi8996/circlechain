@@ -1,0 +1,208 @@
+# CircleChain UI Test Suite (Selenium + Pytest)
+
+A concise, production-ready end-to-end (E2E) and non-functional test suite for web UIs using Selenium WebDriver and Pytest. It includes:
+- Functional tests: login success; contact form submission
+- Non-functional tests: performance budget on home load; responsive layout checks across common viewports
+
+> Replace the base URL and selectors with your application’s values before running.
+
+---
+
+## Table of Contents
+- Overview
+- Test Plan and Acceptance Criteria
+- Repository Structure
+- How It Works
+- Prerequisites
+- Installation
+- Configuration
+- Running the Tests
+- Common Use Cases
+- Troubleshooting & Known Issues
+- Extending the Suite (Page Objects, Parallelism, CI)
+- FAQ
+- Contributing & License
+
+---
+
+## Overview
+This suite uses Selenium WebDriver (Chrome, headless by default) with Pytest fixtures. It focuses on fast feedback and minimal flakiness by:
+- Preferentially targeting stable attributes like `data-testid`
+- Waiting explicitly for UI states only when necessary
+- Measuring performance via the Web Performance API (`performance.getEntriesByType('navigation')`)
+- Checking responsive design without pixel-perfect assertions
+
+
+## Test Plan and Acceptance Criteria
+
+Functional
+1) Login success
+   - Given a valid user, when submitting credentials on `/login`, then the user is redirected to `/dashboard` and a dashboard root element is present.
+
+2) Contact form submit
+   - Given a filled contact form on `/contact`, when submitting, then a success toast appears containing a “Thank you” message.
+
+Non-Functional
+3) Performance budget (home page cold load)
+   - On a cold load of `/` (unique query param to bypass warm cache), `navigation` entry duration ≤ 2000 ms.
+
+4) Responsive layout sanity
+   - At 320×640, 768×1024, 1280×800: no horizontal scroll; navbar and primary CTA are fully visible in the viewport.
+
+Exit criteria: All tests green in a stable environment.
+
+
+## Repository Structure
+- `tests/conftest.py` — Session fixtures for `base_url` and `driver` (Chrome, headless by default)
+- `tests/test_functional.py` — Login and Contact form E2E tests
+- `tests/test_nonfunctional.py` — Performance and responsive layout tests
+
+
+## How It Works
+- Driver management: Uses Selenium Manager (bundled in Selenium 4.6+) to resolve the ChromeDriver automatically; no manual binary management required.
+- Headless mode: Enabled via `--headless=new` for faster, non-interactive runs.
+- Timeouts: `page_load_timeout=30s`; small implicit wait (2s) for simple DOM readiness; explicit waits for critical elements.
+- Base URL: Read from `BASE_URL` environment variable (defaults to `https://example.com`).
+- Selectors: All tests use `data-testid`-based CSS selectors for stability; update them to match your app.
+- Performance metrics: Uses the Navigation Timing Level 2 entry; falls back to legacy `performance.timing` if needed.
+
+
+## Prerequisites
+- Python 3.8+
+- Google Chrome (recent stable)
+- Pip
+
+Recommended Python packages:
+- `selenium >= 4.13.0`
+- `pytest >= 7.0.0`
+- Optional: `pytest-xdist` for parallel runs; `pytest-html` for HTML reports
+
+
+## Installation
+1) Create and activate a virtual environment (recommended)
+   ```bash
+   python -m venv .venv
+   . .venv/bin/activate  # Windows: .venv\Scripts\activate
+   ```
+2) Install dependencies
+   ```bash
+   pip install -U selenium pytest
+   # optional extras
+   pip install pytest-xdist pytest-html
+   ```
+
+
+## Configuration
+- Base URL
+  ```bash
+  export BASE_URL="https://your-app.example.com"
+  ```
+- Test data and selectors
+  - Update `tests/test_functional.py` to use the right credentials, routes, and selectors.
+  - Prefer `data-testid` attributes in your app to keep tests stable.
+
+- Headed vs headless
+  - Default is headless. To observe the browser, remove or comment the `--headless=new` line in `tests/conftest.py`.
+
+
+## Running the Tests
+- Run all tests
+  ```bash
+  BASE_URL=https://your-app.example.com pytest -q tests/
+  ```
+- Run a subset (e.g., only functional)
+  ```bash
+  pytest -q tests/test_functional.py
+  ```
+- Verbose with live logs
+  ```bash
+  pytest -vv -s tests/
+  ```
+- Parallel (optional)
+  ```bash
+  pytest -q -n auto tests/
+  ```
+- HTML report (optional)
+  ```bash
+  pytest --html=report.html --self-contained-html -q tests/
+  ```
+
+
+## Common Use Cases
+- Smoke check before deployment: Run the full suite to ensure critical paths and budgets are intact.
+- PR validation: Trigger functional tests per pull request; run non-functional tests nightly.
+- Responsive audits: Quickly confirm no regressions at mobile/tablet/desktop breakpoints.
+
+
+## Troubleshooting & Known Issues
+- Chrome/Driver mismatch
+  - Ensure recent Chrome is installed; Selenium Manager will fetch a matching driver.
+- StaleElementReference/Timeouts
+  - Increase explicit waits for dynamic content; avoid long implicit waits which hide issues.
+- Flaky performance assertions
+  - Run on stable hardware; increase budget slightly or collect multiple samples and use a percentile/average.
+- Elements not found
+  - Re-check routes and `data-testid` values. Ensure the base URL is correct and app is reachable.
+- Headless rendering differences
+  - If visuals differ, try headed mode to debug or adjust viewport sizes.
+
+
+## Extending the Suite
+
+Page Object Model (POM) example (pattern only):
+```python
+# Example: page objects to reduce duplication
+class LoginPage:
+    def __init__(self, driver, base_url):
+        self.driver = driver
+        self.url = f"{base_url}/login"
+    def open(self):
+        self.driver.get(self.url)
+    def submit(self, email, password):
+        d = self.driver
+        d.find_element(By.CSS_SELECTOR, "[data-testid='email']").send_keys(email)
+        d.find_element(By.CSS_SELECTOR, "[data-testid='password']").send_keys(password)
+        d.find_element(By.CSS_SELECTOR, "[data-testid='login-submit']").click()
+```
+
+Parallel execution:
+- Install `pytest-xdist` and run `pytest -n auto`.
+- Ensure tests are independent and do not share mutable global state or accounts.
+
+CI (GitHub Actions) example:
+```yaml
+name: ui-tests
+on: [push, pull_request]
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install selenium pytest
+      - name: Run tests
+        env:
+          BASE_URL: https://your-app.example.com
+        run: pytest -q tests/
+```
+
+
+## FAQ
+- Can I use Firefox/Edge?
+  - Yes; swap `webdriver.Chrome` for the desired driver and ensure the browser is installed.
+- How do I store credentials?
+  - Do not hardcode in tests. Use environment variables or a secret manager and read them in test code/fixtures.
+- How do I capture screenshots on failure?
+  - Add a Pytest hook (`pytest_runtest_makereport`) to take `driver.save_screenshot()` on failures.
+
+
+## Contributing & License
+- Contributions welcome via pull requests. Please keep tests deterministic and selectors stable.
+- License: MIT (or your project’s preferred license).
