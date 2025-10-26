@@ -17,7 +17,6 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False)
-    wallet_balance = Column(Float, default=1000.0, nullable=False)  # Initial ECT tokens
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships

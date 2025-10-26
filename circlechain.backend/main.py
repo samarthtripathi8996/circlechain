@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from database import engine, Base
-from routers import auth, producer, consumer, recycler, admin, wallet
+from routers import auth, producer, consumer, recycler, admin
 import logging
 
 from models import *
@@ -56,7 +56,6 @@ app.include_router(producer.router)
 app.include_router(consumer.router)
 app.include_router(recycler.router)
 app.include_router(admin.router)
-app.include_router(wallet.router)
 
 @app.get("/")
 def root():
